@@ -4,6 +4,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from database import Database
 from urllib.parse import quote_plus
+from Adarsh.vars import *  # Works if running from ROOT
 
 db = Database(os.getenv("DATABASE_URL"))
 
