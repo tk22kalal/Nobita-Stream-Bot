@@ -1,1 +1,1 @@
-web: python -m Adarsh
+web: python main.py
