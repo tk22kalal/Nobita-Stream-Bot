@@ -1,0 +1,16 @@
+import asyncio
+from bot.telegram_bot import bot
+from website.routes import app
+
+async def run_bot():
+    await bot.start()
+    await bot.stop()
+
+async def main():
+    await db.connect()
+    server_task = asyncio.create_task(app.run_task(host='0.0.0.0', port=os.getenv('PORT', 5000)))
+    bot_task = asyncio.create_task(run_bot())
+    await asyncio.gather(server_task, bot_task)
+
+if __name__ == "__main__":
+    asyncio.run(main())
