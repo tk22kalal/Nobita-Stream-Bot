@@ -3,7 +3,7 @@ import os
 from urllib.parse import quote_plus
 from Adarsh.bot import StreamBot
 from Adarsh.vars import Var
-from Adarsh.utils.helper import get_name, get_hash  # Import helper functions
+from Adarsh.utils.helpers import get_name, get_hash  # Import helper functions
 
 async def generate_stream_link(video_id):
     try:
