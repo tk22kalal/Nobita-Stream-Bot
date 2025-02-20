@@ -1,3 +1,4 @@
+import os
 import asyncio
 from bot.telegram_bot import bot
 from website.routes import app
