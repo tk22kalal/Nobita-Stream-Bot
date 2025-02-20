@@ -1,7 +1,7 @@
 import asyncio
 from bot.telegram_bot import bot
 from website.routes import app
-
+db = Database(os.getenv("DATABASE_URL"))
 async def run_bot():
     await bot.start()
     await bot.stop()
