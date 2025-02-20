@@ -1,1 +1,2 @@
-web: gunicorn Adarsh.api:app
+web: python3 -m Adarsh.app
+worker: python3 -m Adarsh.bot
