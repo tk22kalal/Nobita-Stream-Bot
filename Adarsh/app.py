@@ -1,35 +1,58 @@
-import os
-import logging
-from aiohttp import web
-from Adarsh.stream import generate_stream_link
+import asyncio
+import re
+from flask import Flask, request, jsonify
+from pyrogram import Client
+from Adarsh.bot import StreamBot
+from Adarsh.vars import Var
+from Adarsh.utils.helpers import get_name, get_hash
+from helper_func import get_messages
+from pyrogram.errors import FloodWait
 
-# Setup logging for debugging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app = Flask(__name__)  # Flask API to handle stream requests
 
-async def get_stream(request):
-    video_id = request.query.get("video_id")
-    
-    if not video_id:
-        return web.json_response({"error": "Missing video_id"}, status=400)
-    
+async def process_video(video_url):
     try:
-        stream_link = await generate_stream_link(video_id)
-        
-        if stream_link:
-            return web.json_response({"stream_link": stream_link})
-        else:
-            return web.json_response({"error": "Stream link not found"}, status=404)
-    
+        # Extract Message ID from the Telegram video link
+        match = re.search(r"https://t\.me/c/(\d+)/(\d+)", video_url)
+        if not match:
+            return {"error": "Invalid Telegram video link format."}
+
+        chat_id = int(f"-100{match.group(1)}")  # Convert to valid chat ID
+        message_id = int(match.group(2))
+
+        # Fetch the original message using the extracted message ID
+        messages = await get_messages(StreamBot, [message_id])
+        if not messages or len(messages) == 0:
+            return {"error": "Error: Could not fetch the message. Ensure it's from a valid private channel."}
+
+        original_msg = messages[0]  # Extract message
+
+        # Forward the original message to BIN_CHANNEL
+        log_msg = await original_msg.forward(Var.BIN_CHANNEL)
+        await asyncio.sleep(0.5)  # Small delay for safety
+
+        # Generate the stream link
+        stream_link = f"{Var.URL}watch/{log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+
+        return {"stream_link": stream_link}
+
+    except FloodWait as e:
+        print(f"FloodWait: Sleeping for {e.x} seconds")
+        await asyncio.sleep(e.x)
+        return {"error": "FloodWait occurred, please try again later."}
+
     except Exception as e:
-        logger.error(f"Error fetching stream link: {e}")
-        return web.json_response({"error": "Internal Server Error"}, status=500)
+        print(f"Error: {e}")
+        return {"error": "An error occurred while processing the video link."}
 
-# Create an aiohttp application
-app = web.Application()
-app.router.add_get('/get_stream', get_stream)
+@app.route('/get_stream', methods=['GET'])
+async def get_stream():
+    video_url = request.args.get("video_url")
+    if not video_url:
+        return jsonify({"error": "Missing video_url parameter."})
 
-# Ensure the app binds to the correct port on Heroku
+    result = await process_video(video_url)
+    return jsonify(result)
+
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8080))  # Get PORT from environment variable
-    web.run_app(app, host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=8080)
