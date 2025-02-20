@@ -1,20 +1,35 @@
-import os  # Add this at the top
+from quart import Quart, jsonify, request
 from database import Database
-from quart import Quart, jsonify
-from database import Database
+from bot.telegram_bot import process_telegram_link
+import os
 
 app = Quart(__name__)
 db = Database(os.getenv("DATABASE_URL"))
 
-@app.route("/api/files")
-async def api_files():
-    files = await db.get_all_files()
-    return jsonify([dict(file) for file in files])
+@app.route('/process', methods=['POST'])
+async def process_link():
+    data = await request.get_json()
+    telegram_link = data['telegram_link']
+    lecture_name = data['lecture_name']
+    
+    # Check if already processed
+    existing = await db.get_stream_link(lecture_name)
+    if existing and existing != "pending":
+        return jsonify({"stream_link": existing})
+    
+    # Trigger bot processing
+    await db.insert_file(
+        file_name=lecture_name,
+        telegram_link=telegram_link,
+        stream_link="pending"
+    )
+    
+    # Start background task
+    await process_telegram_link(telegram_link, lecture_name)
+    
+    return jsonify({"stream_link": "pending"})
 
-@app.route("/api/files/<file_name>")
-async def api_file(file_name):
-    link = await db.get_stream_link(file_name)
+@app.route('/check-status/<lecture_name>')
+async def check_status(lecture_name):
+    link = await db.get_stream_link(lecture_name)
     return jsonify({"stream_link": link})
-
-if __name__ == "__main__":
-    app.run()
