@@ -1,3 +1,6 @@
+from Adarsh.vars import Var
+
+
 async def process_telegram_link(telegram_link, lecture_name):
     # Extract channel ID and message ID from link
     parts = telegram_link.split('/')
