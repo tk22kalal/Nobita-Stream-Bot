@@ -9,7 +9,7 @@ db = Database(os.getenv("DATABASE_URL"))
 async def run_bot():
     await bot.start()
     print("Bot started")
-    await asyncio.sleep(3600)  # Keep the bot running for 1 hour (or adjust as needed)
+    await asyncio.sleep(3600)  # Keep the bot running
     await bot.stop()
     print("Bot stopped")
 
