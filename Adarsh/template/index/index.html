@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Link</title>
+</head>
+<body>
+    <h1>Enter Message ID to Fetch Stream</h1>
+    <input type="text" id="msg_id" placeholder="Enter msg_id">
+    <button onclick="fetchStream()">Get Stream</button>
+    <p id="result"></p>
+
+    <script>
+        function fetchStream() {
+            const msg_id = document.getElementById("msg_id").value;
+            if (!msg_id) {
+                alert("Please enter a msg_id.");
+                return;
+            }
+
+            console.log("Fetching stream for msg_id:", msg_id);
+
+            fetch(`/generate_stream?msg_id=${msg_id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error("Error:", data.error);
+                        document.getElementById("result").innerText = "Error: " + data.error;
+                    } else {
+                        console.log("Streaming URL received:", data.stream_url);
+                        document.getElementById("result").innerHTML = `<a href="${data.stream_url}" target="_blank">Click to Stream</a>`;
+                    }
+                })
+                .catch(error => {
+                    console.error("Fetch Error:", error);
+                    document.getElementById("result").innerText = "Could not fetch streaming link.";
+                });
+        }
+    </script>
+</body>
+</html>
