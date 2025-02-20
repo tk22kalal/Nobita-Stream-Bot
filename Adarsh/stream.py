@@ -3,20 +3,20 @@ import os
 from urllib.parse import quote_plus
 from Adarsh.bot import StreamBot
 from Adarsh.vars import Var
-from Adarsh.utils.helpers import get_name, get_hash  # Import from helpers.py
+from Adarsh.utils.helper import get_name, get_hash  # Import helper functions
 
 async def generate_stream_link(video_id):
     try:
         # Convert video ID to integer
         video_id = int(video_id)
         
-        # Fetch the message from the DB_CHANNEL
+        # Fetch message from DB_CHANNEL
         messages = await get_messages(StreamBot, [video_id])
 
-        # Ensure messages is not None or empty
+        # Ensure messages exist
         if not messages or len(messages) == 0:
             print(f"Error: No message found for video_id {video_id}")
-            return None  # Video not found
+            return None  
 
         msg = messages[0]  # Extract first message
 
