@@ -1,12 +1,15 @@
+
+from helper_func import encode, get_message_id, decode, get_messages
 import os
 from urllib.parse import quote_plus
 from Adarsh.bot import StreamBot
 from Adarsh.vars import Var
-from helper_func import encode, get_message_id, decode, get_messages
-from Adarsh.utils.file_properties import get_name, get_hash
 
 async def generate_stream_link(video_id):
     try:
+        # Import inside function to prevent circular import error
+        from Adarsh.utils.file_properties import get_name, get_hash  
+
         # Convert video ID to integer
         video_id = int(video_id)
         
