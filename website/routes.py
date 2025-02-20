@@ -1,6 +1,5 @@
 from quart import Quart, jsonify, request
 from database import Database
-from bot.telegram_bot import process_telegram_link
 import os
 
 app = Quart(__name__)
