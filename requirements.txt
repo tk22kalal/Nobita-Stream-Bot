@@ -15,3 +15,5 @@ gunicorn<= 21.2.0
 asyncio
 openpyxl
 pillow
+asyncpg
+quart
