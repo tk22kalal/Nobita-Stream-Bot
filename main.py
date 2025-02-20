@@ -2,6 +2,7 @@ import asyncio
 from bot.telegram_bot import bot
 from website.routes import app
 from database import Database
+import os
 
 db = Database(os.getenv("DATABASE_URL"))
 
