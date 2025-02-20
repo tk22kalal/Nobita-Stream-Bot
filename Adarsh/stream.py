@@ -2,7 +2,7 @@ import os
 from urllib.parse import quote_plus
 from Adarsh.bot import StreamBot
 from Adarsh.vars import Var
-from Adarsh.utils.helper_func import get_messages
+from helper_func import encode, get_message_id, decode, get_messages
 from Adarsh.utils.file_properties import get_name, get_hash
 
 async def generate_stream_link(video_id):
