@@ -1,3 +1,5 @@
+import os  # Add this at the top
+from database import Database
 from quart import Quart, jsonify
 from database import Database
 
