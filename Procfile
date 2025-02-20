@@ -1,1 +1,1 @@
-web: gunicorn Adarsh.bot.plugins.api:app
+web: gunicorn Adarsh.api:app
