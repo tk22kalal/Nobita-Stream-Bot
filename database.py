@@ -34,6 +34,3 @@ class Database:
 
     async def close(self):
         self.client.close()
-
-# Export the Database class
-__all__ = ["Database"]
