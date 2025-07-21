@@ -23,16 +23,12 @@ PROTECT_CONTENT = True if os.environ.get('PROTECT_CONTENT', "False") == "True" e
 #Set true if you want Disable your Channel Posts Share button
 DISABLE_CHANNEL_BUTTON = os.environ.get("DISABLE_CHANNEL_BUTTON", None) == 'True'
 
-MY_PASS = os.environ.get("MY_PASS", None)
-pass_dict = {}
-pass_db = Database(Var.DATABASE_URL, "ag_passwords")
-
+CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", None)
 
 @StreamBot.on_message(filters.private & filters.user(list(Var.OWNER_ID)) & filters.command('batch'))
 async def batch(client: Client, message: Message):
     while True:
         try:
-            # Prompt the user to provide the first message from the DB Channel
             first_message = await client.ask(
                 text="Forward the First Message from DB Channel (with Quotes)..\n\nor Send the DB Channel Post Link",
                 chat_id=message.from_user.id,
@@ -40,21 +36,18 @@ async def batch(client: Client, message: Message):
                 timeout=60
             )
         except:
-            return  # Return if there's an exception (e.g., timeout)
+            return
 
-        # Get the message ID from the provided message or link
         f_msg_id = await get_message_id(client, first_message)
 
         if f_msg_id:
             break
         else:
-            # Inform the user of an error if the message/link is not from the DB Channel
-            await first_message.reply("❌ Error\n\nthis Forwarded Post is not from my DB Channel or this Link is taken from DB Channel", quote=True)
+            await first_message.reply("❌ Error\n\nThis Forwarded Post is not from my DB Channel or the link is invalid.")
             continue
 
     while True:
         try:
-            # Prompt the user to provide the last message from the DB Channel
             second_message = await client.ask(
                 text="Forward the Last Message from DB Channel (with Quotes)..\nor Send the DB Channel Post link",
                 chat_id=message.from_user.id,
@@ -62,25 +55,24 @@ async def batch(client: Client, message: Message):
                 timeout=60
             )
         except:
-            return  # Return if there's an exception (e.g., timeout)
+            return
 
-        # Get the message ID from the provided message or link
         s_msg_id = await get_message_id(client, second_message)
 
         if s_msg_id:
             break
         else:
-            # Inform the user of an error if the message/link is not from the DB Channel
-            await second_message.reply("❌ Error\n\nthis Forwarded Post is not from my DB Channel or this Link is taken from DB Channel", quote=True)
+            await second_message.reply("❌ Error\n\nThis Forwarded Post is not from my DB Channel or the link is invalid.")
             continue
 
-    # Generate a list of links for each message between the first and second message
     message_links = []
     for msg_id in range(min(f_msg_id, s_msg_id), max(f_msg_id, s_msg_id) + 1):
         string = f"get-{msg_id * abs(client.db_channel)}"
         base64_string = await encode(string)
         link = f"https://t.me/{client.username}?start={base64_string}"
         message_links.append(link)
+
+    json_output = []
 
     for link in message_links:
         try:
@@ -97,16 +89,7 @@ async def batch(client: Client, message: Message):
                 end = int(int(argument[2]) / abs(client.db_channel))
             except:
                 return
-            if start <= end:
-                ids = range(start, end + 1)
-            else:
-                ids = []
-                i = start
-                while True:
-                    ids.append(i)
-                    i -= 1
-                    if i < end:
-                        break
+            ids = list(range(start, end + 1)) if start <= end else list(range(start, end - 1, -1))
         elif len(argument) == 2:
             try:
                 ids = [int(int(argument[1]) / abs(client.db_channel))]
@@ -117,37 +100,45 @@ async def batch(client: Client, message: Message):
             messages = await get_messages(client, ids)
         except Exception as e:
             print(f"Error fetching messages: {e}")
-            await message.reply_text("Something went wrong..!")
+            await message.reply_text("Something went wrong while fetching messages.")
             return        
 
         for msg in messages:
-
-            if bool(CUSTOM_CAPTION) & bool(msg.document):
-                caption = CUSTOM_CAPTION.format(previouscaption="" if not msg.caption else msg.caption.html, filename=msg.document.file_name)
+            if bool(CUSTOM_CAPTION) and bool(msg.document):
+                caption = CUSTOM_CAPTION.format(
+                    previouscaption=msg.caption.html if msg.caption else "",
+                    filename=msg.document.file_name
+                )
             else:
-                caption = "" if not msg.caption else msg.caption.html
+                caption = msg.caption.html if msg.caption else ""
 
             caption = re.sub(r'@[\w_]+|http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', caption)
             caption = re.sub(r'\s+', ' ', caption.strip())
-
-            if DISABLE_CHANNEL_BUTTON:
-                reply_markup = msg.reply_markup
-            else:
-                reply_markup = None
 
             try:
                 log_msg = await msg.copy(chat_id=Var.BIN_CHANNEL)
                 await asyncio.sleep(0.5)
                 stream_link = f"{Var.URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-                online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-                reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔁 Share URL", url=stream_link)]])
-                await log_msg.edit_reply_markup(reply_markup)
-                F_text = f"<tr><td>&lt;a href='{stream_link}' target='_blank'&gt; {caption} &lt;/a&gt;</td></tr>"
-                text = f"<tr><td>{F_text}</td></tr>"
-                X = await message.reply_text(text=f"{text}", disable_web_page_preview=True, quote=True)                                                         
+                json_output.append({
+                    "title": caption,
+                    "streamingUrl": stream_link
+                })
+
             except FloodWait as e:
                 print(f"Sleeping for {str(e.x)}s")
                 await asyncio.sleep(e.x)
+
+    # Save JSON to file
+    filename = f"/tmp/batch_output_{message.from_user.id}.json"
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(json_output, f, indent=4, ensure_ascii=False)
+
+    # Send file to user
+    await client.send_document(
+        chat_id=message.chat.id,
+        document=filename,
+        caption="✅ Batch JSON created successfully.",
+    )
 
 
 @StreamBot.on_message((filters.private) & (filters.document | filters.audio | filters.photo), group=3)
