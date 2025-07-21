@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from pyromod import listen
 from ..vars import Var
 from pyrogram import Client
 from Adarsh.utils.config_parser import TokenParser
