@@ -3,6 +3,7 @@
 from pyrogram import Client
 from pyrogram.errors import FloodWait
 import asyncio
+from pyromod import listen
 
 class CustomClient(Client):
     def __init__(self, db_channel, *args, **kwargs):
