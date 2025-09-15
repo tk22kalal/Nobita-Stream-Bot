@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from urllib.parse import quote_plus
 from Adarsh.vars import Var
 from Adarsh.utils.file_properties import get_name, get_hash
-from pyrogram.environ import ParseMode
+from pyrogram.enons import ParseMode
 from pyrogram.errors import FloodWait
 
 # Ensure these objects are imported or initialized as in your bot file
