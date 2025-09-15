@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from urllib.parse import quote_plus
 from Adarsh.vars import Var
 from Adarsh.utils.file_properties import get_name, get_hash
-from pyrogram.enoms import ParseMode
+from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
