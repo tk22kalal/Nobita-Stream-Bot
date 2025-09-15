@@ -15,7 +15,7 @@ class Var(object):
     SLEEP_THRESHOLD = int(getenv('SLEEP_THRESHOLD', '60'))
     WORKERS = int(getenv('WORKERS', '4'))
     BIN_CHANNEL = int(getenv('BIN_CHANNEL', ''))
-    DB_CHANNEL = int(getenv('DB_CHANNEL', ''))
+    DB_CHANNEL = int(getenv('DB_CHANNEL', '0'))
     DISABLE_CHANNEL_BUTTON = os.environ.get("DISABLE_CHANNEL_BUTTON", None) == 'True'
     PROTECT_CONTENT = os.environ.get('PROTECT_CONTENT', "True") == "True"
     CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", None)
