@@ -8,7 +8,7 @@ app = FastAPI()
 @app.get("/generate")
 async def generate_stream(id: int):
     try:
-        # Forward message again to BIN_CHANNEL
+        # Get message from DB_CHANNEL and forward to BIN_CHANNEL
         msg = await app.bot.get_messages(Var.DB_CHANNEL, id)
         log_msg = await msg.copy(chat_id=Var.BIN_CHANNEL)
 
@@ -17,7 +17,6 @@ async def generate_stream(id: int):
         fqdn_url = Var.get_url_for_file(str(log_msg.id))
 
         stream_link = f"{fqdn_url}watch/{log_msg.id}/{quote_plus(file_name)}?hash={file_hash}"
-
         return {"stream_link": stream_link}
 
     except Exception as e:
