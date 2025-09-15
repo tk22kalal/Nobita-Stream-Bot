@@ -10,7 +10,7 @@ from Adarsh.utils.human_readable import humanbytes
 from Adarsh.vars import Var
 from urllib.parse import quote_plus, urlencode
 from pyrogram import filters, Client
-from pyrogram.environ import ParseMode
+from pyrogram.enoms import ParseMode
 from pyrogram.errors import FloodWait
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from Adarsh.utils.file_properties import get_name, get_hash
