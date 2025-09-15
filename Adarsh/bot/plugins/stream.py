@@ -126,7 +126,25 @@ VIDEO_HTML_TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
-async def process_message(msg, json_output, skipped_messages):
+async def get_message_id(client, message):
+    """Extract message ID from forwarded message or link"""
+    if message.forward_from_chat:
+        # Forwarded from channel
+        if message.forward_from_chat.id == Var.DB_CHANNEL:
+            return message.forward_from_message_id
+    elif message.text:
+        # Try to parse as link
+        try:
+            # Handle telegram links like https://t.me/c/channel_id/message_id
+            if "t.me" in message.text:
+                parts = message.text.split("/")
+                if len(parts) >= 2:
+                    return int(parts[-1])
+        except:
+            pass
+    return None
+
+async def process_message(client, msg, json_output, skipped_messages):
     """Process individual message and generate HTML page"""
     try:
         # Validate media content
@@ -242,20 +260,21 @@ async def batch(client: Client, message: Message):
         msg_ids = list(range(batch_start, batch_end + 1))
         
         try:
-            messages = await get_messages(client, msg_ids)
+            # Get messages directly from DB channel
+            messages = await client.get_messages(Var.DB_CHANNEL, msg_ids)
         except Exception as e:
             messages = []
             # If batch fetch fails, get messages individually
             for msg_id in msg_ids:
                 try:
-                    msg = (await get_messages(client, [msg_id]))[0]
+                    msg = await client.get_messages(Var.DB_CHANNEL, msg_id)
                     messages.append(msg)
                 except:
                     messages.append(None)
         
         for msg in messages:
             processed_count += 1
-            if not msg:
+            if not msg or not hasattr(msg, 'id'):
                 skipped_messages.append({
                     "id": msg_ids[messages.index(msg)] if msg in messages else "Unknown",
                     "file_name": "Unknown",
@@ -263,7 +282,7 @@ async def batch(client: Client, message: Message):
                 })
                 continue
                 
-            await process_message(msg, json_output, skipped_messages)
+            await process_message(client, msg, json_output, skipped_messages)
             if processed_count % 10 == 0:
                 await status_msg.edit_text(
                     f"🔄 Processing...\n"
@@ -295,78 +314,25 @@ async def batch(client: Client, message: Message):
     await status_msg.delete()
     os.remove(filename)
 
-# Add this to your web server routes (assuming you're using a web framework like Flask)
-"""
-@app.route('/generate_stream', methods=['POST'])
-async def generate_stream():
-    try:
-        data = await request.get_json()
-        file_id = data.get('file_id')
-        original_msg_id = data.get('original_msg_id')
-        chat_id = data.get('chat_id')
-        
-        # Get file info from database
-        file_info = await db.get_file_info(file_id)
-        if not file_info:
-            return jsonify({'success': False, 'message': 'File not found'})
-        
-        # Get the original message
-        original_msg = await client.get_messages(chat_id, original_msg_id)
-        if not original_msg:
-            return jsonify({'success': False, 'message': 'Original message not found'})
-        
-        # Forward to log channel with FloodWait handling
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                log_msg = await original_msg.copy(
-                    chat_id=Var.BIN_CHANNEL,
-                    caption=file_info['caption'][:1024],
-                    parse_mode=ParseMode.HTML
-                )
-                break
-            except FloodWait as e:
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(e.x)
-                else:
-                    raise
-        
-        # Generate fresh streaming URL
-        file_name = get_name(log_msg) or file_info['file_name']
-        file_hash = get_hash(log_msg)
-        stream_link = f"{Var.URL}watch/{log_msg.id}/{quote_plus(file_name)}?hash={file_hash}"
-        
-        # Update database with new log message ID
-        await db.update_log_message_id(file_id, log_msg.id)
-        
-        return jsonify({
-            'success': True,
-            'stream_url': stream_link,
-            'expires_at': (datetime.now() + timedelta(hours=24)).isoformat()
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-"""
-
-@StreamBot.on_message((filters.private) & (filters.document | filters.audio | filters.photo), group=3)
+@StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=3)
 async def private_receive_handler(c: Client, m: Message):
-    if bool(CUSTOM_CAPTION) and bool(m.document):
+    if bool(CUSTOM_CAPTION) and (m.document or m.video):
         caption = CUSTOM_CAPTION.format(
             previouscaption="" if not m.caption else m.caption.html,
             filename=get_name(m)
         )
     else:
         caption = m.caption.html if m.caption else get_name(m)
-    caption = re.sub(r'@[\w_]+|http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', caption)
-    caption = re.sub(r'\s+', ' ', caption.strip())
-    caption = re.sub(r'\s*#\w+', '', caption)
+    
+    if caption:
+        caption = re.sub(r'@[\w_]+|http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', caption)
+        caption = re.sub(r'\s+', ' ', caption.strip())
+        caption = re.sub(r'\s*#\w+', '', caption)
+    else:
+        caption = get_name(m) or "Media File"
 
     try:
-        log_msg = await m.copy(chat_id=Var.BIN_CHANNEL)
-        await asyncio.sleep(0.5)
-        
-        # Generate HTML page for single file too
+        # Generate HTML page for single file
         file_id = get_hash(m)
         file_name = get_name(m) or "video"
         safe_title = html.escape(caption[:60] + "..." if len(caption) > 60 else caption)
@@ -400,7 +366,7 @@ async def private_receive_handler(c: Client, m: Message):
         # Send HTML link to user instead of direct stream link
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("WATCH VIDEO", url=html_url)]])
         await m.reply_text(
-            text=f"✅ Your file is ready!\n\nClick the button below to watch:\n\n{caption}",
+            text=f"✅ Your file is ready!\n\n**Title:** {caption}\n\nClick the button below to watch:",
             reply_markup=reply_markup,
             quote=True
         )
@@ -408,3 +374,5 @@ async def private_receive_handler(c: Client, m: Message):
     except FloodWait as e:
         print(f"Sleeping for {str(e.x)}s")
         await asyncio.sleep(e.x)
+    except Exception as e:
+        await m.reply_text(f"❌ Error processing file: {str(e)}")
