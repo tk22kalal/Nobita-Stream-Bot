@@ -6,6 +6,7 @@ from Adarsh.vars import Var
 from Adarsh.utils.file_properties import get_name, get_hash
 from pyrogram.enoms import ParseMode
 from pyrogram.errors import FloodWait
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 # Ensure these objects are imported or initialized as in your bot file
 from Adarsh.bot import StreamBot
