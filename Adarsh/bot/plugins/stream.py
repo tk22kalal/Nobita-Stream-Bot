@@ -80,12 +80,53 @@ async def process_message(msg, json_output, skipped_messages):
         else:
             caption = get_name(msg) or "NEXTPULSE"
 
-        # Instead of generating stream_link here,
-        # we only generate an HTML page for deferred link creation
-        html_file = generate_html_page(msg.id, caption)
+        # ✅ Forward message like before (to BIN_CHANNEL)
+        log_msg = await msg.copy(chat_id=Var.BIN_CHANNEL)
+        file_name = get_name(log_msg) or "NEXTPULSE"
 
-        # Save watch page link in JSON
-        watch_page_url = f"{Var.URL}watchpages/{msg.id}.html"
+        # ✅ Instead of generating direct stream link here,
+        # make a watch page that will call /generate endpoint
+        html_dir = "/tmp/watchpages"
+        os.makedirs(html_dir, exist_ok=True)
+        html_file = os.path.join(html_dir, f"{log_msg.id}.html")
+
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{caption}</title>
+  <style>
+    body {{ display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #f4f4f9; }}
+    button {{ padding: 15px 30px; font-size: 18px; cursor: pointer; border: none; border-radius: 10px; background: #008cff; color: white; }}
+    button:hover {{ background: #0066cc; }}
+  </style>
+</head>
+<body>
+  <button onclick="generateStream()">Generate Stream</button>
+
+  <script>
+    async function generateStream() {{
+      try {{
+        const res = await fetch('/generate?id={log_msg.id}');
+        const data = await res.json();
+        if (data.stream_link) {{
+          window.location.href = data.stream_link;
+        }} else {{
+          alert("Failed to generate stream link!");
+        }}
+      }} catch (err) {{
+        alert("Error generating stream link!");
+      }}
+    }}
+  </script>
+</body>
+</html>
+"""
+        with open(html_file, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+        # ✅ Save watch page URL instead of direct stream link
+        watch_page_url = f"{Var.URL}watchpages/{log_msg.id}.html"
 
         json_output.append({
             "title": caption,
