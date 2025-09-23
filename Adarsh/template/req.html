@@ -2,36 +2,146 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta property="og:image" content="https://graph.org/file/5e6d18610741226005e6e.jpg" itemprop="thumbnailUrl">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="monetag" content="f3ecc71ccb639ccf66d9d0dee93d3e7a">
-    <title>{{ file_name }}</title>
-    <!-- Primary CSS (retain for look) -->
-    <link rel="stylesheet" type='text/css' href="https://drive----google.com/uc?export=view&id=1pVLG4gZy7jdow3sO-wFS06aP_A9QX0O6">
+    <title>Advanced HTML5 Video Player</title>
+    <!-- Video.js CSS -->
+    <link href="https://unpkg.com/video.js/dist/video-js.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Delius">
-    <!-- Video.js CSS (advanced HTML5 player) -->
-    <link href="https://unpkg.com/video.js/dist/video-js.min.css" rel="stylesheet">
     <style>
-        marquee {
-            font-size: 30px;
-            font-weight: 800;
-            color: Black;
-            font-family: serif;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Raleway', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
         .container {
-            max-width: 900px;
-            margin: auto;
-            padding: 1em;
-            text-align: center;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
+        
+        header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            text-align: center;
+            border-bottom: 2px solid #ff5722;
+        }
+        
+        .file-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            padding: 10px;
+        }
+        
+        .video-container {
+            position: relative;
+            padding: 20px;
+        }
+        
         .video-js {
             width: 100%;
-            height: auto;
-            max-height: 500px;
-            font-family: 'Raleway', 'Delius', serif;
+            height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
         }
+        
+        .custom-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-top: 1px solid #444;
+        }
+        
+        .control-btn {
+            background: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-btn:hover {
+            background: #ff7043;
+            transform: scale(1.1);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .skip-amount {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .info-panel {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+        
+        .info-panel h3 {
+            color: #ff5722;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        
+        .shortcuts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dotted #444;
+        }
+        
+        .key {
+            background: #333;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            color: #aaa;
+            border-top: 1px solid #444;
+            margin-top: 20px;
+        }
+        
         /* Loading indicator */
         .loading-indicator {
             position: absolute;
@@ -46,104 +156,180 @@
             border-radius: 5px;
             display: none;
         }
-        /* Error message */
-        .error-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            color: white;
-            font-size: 18px;
-            background: rgba(255,0,0,0.7);
-            padding: 10px 20px;
-            border-radius: 5px;
-            display: none;
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .video-js {
+                height: 300px;
+            }
+            
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 16px;
+            }
+            
+            .file-name {
+                font-size: 20px;
+            }
         }
-        /* Retry button */
-        .retry-button {
-            background: #ff5722;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            margin-top: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
+        
+        @media (max-width: 480px) {
+            .video-js {
+                height: 250px;
+            }
+            
+            .custom-controls {
+                gap: 10px;
+            }
+            
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 14px;
+            }
+            
+            .file-name {
+                font-size: 18px;
+            }
         }
-        /* Custom control bar */
+        
+        /* Custom Video.js theme */
         .vjs-control-bar {
-            background: rgba(0,0,0,0.7) !important;
+            background: rgba(0, 0, 0, 0.7) !important;
         }
-        /* Custom fullscreen button */
-        .vjs-fullscreen-control {
-            margin-right: 10px;
-        }
-        /* Custom progress bar */
-        .vjs-progress-holder {
-            height: 8px;
-        }
+        
         .vjs-play-progress {
-            background: #ff5722;
+            background: #ff5722 !important;
+        }
+        
+        .vjs-volume-level {
+            background: #ff5722 !important;
+        }
+        
+        .vjs-big-play-button {
+            background: rgba(255, 87, 34, 0.8) !important;
+            border: none !important;
+            border-radius: 50% !important;
+            width: 80px !important;
+            height: 80px !important;
+            line-height: 80px !important;
+            font-size: 40px !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
         }
     </style>
-    <meta name='dmca-site-verification' content='THBkdGsyeW85ZTBMT3VZNHpteGkvWEtoV3h5NENqcDdPa2hsUzZiU0ZZST01' />
 </head>
-
 <body>
-
-    <header>
-        <marquee bgcolor="#fff">
-            <div class="toogle"></div>
-            <div id="file-name">
-                {{ file_name }}
-            </div>
-        </marquee>
-    </header>
-
     <div class="container">
-        <!-- Loading indicator -->
-        <div class="loading-indicator" id="loading-indicator">
-            Loading video... <span id="retry-count">0</span> retries
+        <header>
+            <div class="file-name">My Video Player - Advanced Controls</div>
+        </header>
+        
+        <div class="video-container">
+            <!-- Loading indicator -->
+            <div class="loading-indicator" id="loading-indicator">
+                Loading video... <span id="retry-count">0</span> retries
+            </div>
+            
+            <!-- Video.js Player -->
+            <video
+                id="my-video"
+                class="video-js vjs-default-skin"
+                controls
+                preload="auto"
+                poster="https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+                data-setup='{"fluid": true}'
+            >
+                <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                <p class="vjs-no-js">
+                    To view this video please enable JavaScript, and consider upgrading to a web browser that
+                    <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>.
+                </p>
+            </video>
+            
+            <!-- Custom Controls -->
+            <div class="custom-controls">
+                <button class="control-btn" id="restart" title="Restart">
+                    ↺
+                </button>
+                <button class="control-btn" id="rewind" title="Rewind 10s">
+                    ⏪
+                    <div class="skip-amount">10s</div>
+                </button>
+                <button class="control-btn" id="play-pause" title="Play/Pause">
+                    ▶
+                </button>
+                <button class="control-btn" id="forward" title="Forward 10s">
+                    ⏩
+                    <div class="skip-amount">10s</div>
+                </button>
+                <button class="control-btn" id="fullscreen" title="Fullscreen">
+                    ⛶
+                </button>
+            </div>
         </div>
         
-        <!-- Error message -->
-        <div class="error-message" id="error-message">
-            Failed to load video. 
-            <button class="retry-button" id="retry-button">Retry</button>
+        <div class="info-panel">
+            <h3>Player Features</h3>
+            <p>This advanced HTML5 video player includes:</p>
+            <ul>
+                <li>Fast loading with multiple retry mechanisms</li>
+                <li>Fullscreen support</li>
+                <li>10-second skip forward/backward buttons</li>
+                <li>Playback speed control</li>
+                <li>Keyboard shortcuts</li>
+                <li>Responsive design for all devices</li>
+            </ul>
+            
+            <h3>Keyboard Shortcuts</h3>
+            <div class="shortcuts">
+                <div class="shortcut-item">
+                    <span>Play/Pause:</span>
+                    <span class="key">Spacebar</span>
+                </div>
+                <div class="shortcut-item">
+                    <span>Fullscreen:</span>
+                    <span class="key">F</span>
+                </div>
+                <div class="shortcut-item">
+                    <span>Rewind 10s:</span>
+                    <span class="key">←</span>
+                </div>
+                <div class="shortcut-item">
+                    <span>Forward 10s:</span>
+                    <span class="key">→</span>
+                </div>
+                <div class="shortcut-item">
+                    <span>Volume Up:</span>
+                    <span class="key">↑</span>
+                </div>
+                <div class="shortcut-item">
+                    <span>Volume Down:</span>
+                    <span class="key">↓</span>
+                </div>
+                <div class="shortcut-item">
+                    <span>Mute:</span>
+                    <span class="key">M</span>
+                </div>
+            </div>
         </div>
-
-        <!-- Advanced HTML5 Player: Video.js -->
-        <video
-            id="advanced-player"
-            class="video-js vjs-default-skin player"
-            controls
-            preload="auto"
-            poster="https://graph.org/file/5e6d18610741226005e6e.jpg"
-            data-setup='{"fluid": true}'
-        >
-            <source src="{{ file_url }}" type="video/mp4">
-            <!-- Fallback for other video types if needed -->
-            <!-- <source src="{{ file_url }}" type="video/webm"> -->
-            Your browser does not support the video tag.
-        </video>
+        
+        <footer>
+            <p>Advanced HTML5 Video Player &copy; 2023 | Built with Video.js</p>
+        </footer>
     </div>
 
     <!-- Video.js Library -->
     <script src="https://unpkg.com/video.js/dist/video.min.js"></script>
     <script>
-        // Video loading configuration
-        const MAX_RETRIES = 5;
-        const RETRY_DELAY = 2000; // 2 seconds
-        let retryCount = 0;
-        let isRetrying = false;
-
         // Initialize Video.js player
-        const player = videojs('advanced-player', {
+        const player = videojs('my-video', {
             controls: true,
             preload: 'auto',
             fluid: true,
-            playbackRates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+            playbackRates: [0.5, 1, 1.25, 1.5, 2],
             html5: {
                 hls: {
                     overrideNative: true,
@@ -155,33 +341,30 @@
             }
         });
 
-        const videoElem = document.getElementById('advanced-player');
+        // Get DOM elements
+        const playPauseBtn = document.getElementById('play-pause');
+        const restartBtn = document.getElementById('restart');
+        const rewindBtn = document.getElementById('rewind');
+        const forwardBtn = document.getElementById('forward');
+        const fullscreenBtn = document.getElementById('fullscreen');
         const loadingIndicator = document.getElementById('loading-indicator');
-        const errorMessage = document.getElementById('error-message');
-        const retryButton = document.getElementById('retry-button');
         const retryCountSpan = document.getElementById('retry-count');
+
+        // Video loading configuration
+        const MAX_RETRIES = 5;
+        const RETRY_DELAY = 2000;
+        let retryCount = 0;
+        let isRetrying = false;
 
         // Show loading indicator
         function showLoading() {
             loadingIndicator.style.display = 'block';
-            errorMessage.style.display = 'none';
             retryCountSpan.textContent = retryCount;
         }
 
         // Hide loading indicator
         function hideLoading() {
             loadingIndicator.style.display = 'none';
-        }
-
-        // Show error message
-        function showError() {
-            errorMessage.style.display = 'block';
-            loadingIndicator.style.display = 'none';
-        }
-
-        // Hide error message
-        function hideError() {
-            errorMessage.style.display = 'none';
         }
 
         // Retry loading video
@@ -192,9 +375,8 @@
             retryCount++;
             showLoading();
             
-            // Create a new source to force reload
             const currentTime = player.currentTime();
-            player.src({ type: 'video/mp4', src: "{{ file_url }}" });
+            player.src({ type: 'video/mp4', src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" });
             
             setTimeout(() => {
                 player.load();
@@ -215,12 +397,10 @@
 
         player.on('loadeddata', function() {
             hideLoading();
-            hideError();
         });
 
         player.on('canplay', function() {
             hideLoading();
-            hideError();
         });
 
         player.on('waiting', function() {
@@ -229,27 +409,57 @@
 
         player.on('playing', function() {
             hideLoading();
-            hideError();
         });
 
         player.on('error', function() {
             if (retryCount < MAX_RETRIES) {
-                showError();
                 setTimeout(retryLoadVideo, RETRY_DELAY);
-            } else {
-                showError();
             }
         });
 
-        // Retry button click handler
-        retryButton.addEventListener('click', function() {
-            retryCount = 0;
-            retryLoadVideo();
+        // Custom control functions
+        playPauseBtn.addEventListener('click', function() {
+            if (player.paused()) {
+                player.play();
+                playPauseBtn.innerHTML = '⏸';
+            } else {
+                player.pause();
+                playPauseBtn.innerHTML = '▶';
+            }
         });
 
-        // Custom double click events for forward/backward 10s
-        videoElem.addEventListener('dblclick', function(event) {
-            const rect = videoElem.getBoundingClientRect();
+        restartBtn.addEventListener('click', function() {
+            player.currentTime(0);
+        });
+
+        rewindBtn.addEventListener('click', function() {
+            player.currentTime(Math.max(player.currentTime() - 10, 0));
+        });
+
+        forwardBtn.addEventListener('click', function() {
+            player.currentTime(Math.min(player.currentTime() + 10, player.duration()));
+        });
+
+        fullscreenBtn.addEventListener('click', function() {
+            if (player.isFullscreen()) {
+                player.exitFullscreen();
+            } else {
+                player.requestFullscreen();
+            }
+        });
+
+        // Update play/pause button when video state changes
+        player.on('play', function() {
+            playPauseBtn.innerHTML = '⏸';
+        });
+
+        player.on('pause', function() {
+            playPauseBtn.innerHTML = '▶';
+        });
+
+        // Double-click to skip (left side: -10s, right side: +10s)
+        player.on('dblclick', function(event) {
+            const rect = player.el().getBoundingClientRect();
             const x = event.clientX - rect.left;
             
             if (x < rect.width / 2) {
@@ -261,56 +471,49 @@
             }
         });
 
-        // Optionally remove contextmenu to prevent accidental pop-up
-        videoElem.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-        });
-
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            // Space bar to play/pause
-            if (e.code === 'Space' && document.activeElement !== document.body) {
-                e.preventDefault();
-                if (player.paused()) {
-                    player.play();
-                } else {
-                    player.pause();
-                }
-            }
+            // Prevent shortcuts when typing in inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             
-            // Left/Right arrow keys for seeking
-            if (e.code === 'ArrowLeft') {
-                player.currentTime(Math.max(player.currentTime() - 10, 0));
-            } else if (e.code === 'ArrowRight') {
-                player.currentTime(Math.min(player.currentTime() + 10, player.duration()));
-            }
-            
-            // Up/Down arrow keys for volume
-            if (e.code === 'ArrowUp') {
-                player.volume(Math.min(player.volume() + 0.1, 1));
-            } else if (e.code === 'ArrowDown') {
-                player.volume(Math.max(player.volume() - 0.1, 0));
-            }
-            
-            // F key for fullscreen
-            if (e.code === 'KeyF') {
-                if (player.isFullscreen()) {
-                    player.exitFullscreen();
-                } else {
-                    player.requestFullscreen();
-                }
-            }
-            
-            // M key for mute
-            if (e.code === 'KeyM') {
-                player.muted(!player.muted());
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    if (player.paused()) {
+                        player.play();
+                    } else {
+                        player.pause();
+                    }
+                    break;
+                case 'KeyF':
+                    if (player.isFullscreen()) {
+                        player.exitFullscreen();
+                    } else {
+                        player.requestFullscreen();
+                    }
+                    break;
+                case 'ArrowLeft':
+                    player.currentTime(Math.max(player.currentTime() - 10, 0));
+                    break;
+                case 'ArrowRight':
+                    player.currentTime(Math.min(player.currentTime() + 10, player.duration()));
+                    break;
+                case 'ArrowUp':
+                    player.volume(Math.min(player.volume() + 0.1, 1));
+                    break;
+                case 'ArrowDown':
+                    player.volume(Math.max(player.volume() - 0.1, 0));
+                    break;
+                case 'KeyM':
+                    player.muted(!player.muted());
+                    break;
             }
         });
 
-        // Retain old references if needed
-        const body = document.querySelector('body');
-        const footer = document.querySelector('footer');
-        const toogle = document.querySelector('.toogle');
+        // Prevent context menu on video
+        player.on('contextmenu', function(e) {
+            e.preventDefault();
+        });
     </script>
 </body>
 </html>
