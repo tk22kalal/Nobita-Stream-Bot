@@ -1,3 +1,4 @@
+
 import re
 import os
 import asyncio
@@ -12,13 +13,9 @@ from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from Adarsh.utils.file_properties import get_name, get_hash
-from helper_func import encode, get_message_id, decode, get_messages
 
 db = Database(Var.DATABASE_URL, Var.name)
 CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", None)
-PROTECT_CONTENT = os.environ.get('PROTECT_CONTENT', "False") == "True"
-DISABLE_CHANNEL_BUTTON = os.environ.get("DISABLE_CHANNEL_BUTTON", None) == 'True'
-
 
 # ------------------------- PROCESS ONE MESSAGE -------------------------
 async def process_message(msg, json_output, skipped_messages):
@@ -71,8 +68,7 @@ async def process_message(msg, json_output, skipped_messages):
 
 # ------------------------- BATCH HANDLER -------------------------
 @StreamBot.on_message(filters.private & filters.user(list(Var.OWNER_ID)) & filters.command('batch'))
-async def batch(client: Client, message: Message):
-    Var.reset_batch()
+async def batch_handler(client: Client, message: Message):
     json_output = []
     skipped_messages = []
 
@@ -121,12 +117,12 @@ async def batch(client: Client, message: Message):
         msg_ids = list(range(batch_start, batch_end + 1))
 
         try:
-            messages = await get_messages(client, msg_ids)
+            messages = await client.get_messages(Var.BIN_CHANNEL, msg_ids)
         except Exception:
             messages = []
             for msg_id in msg_ids:
                 try:
-                    msg = (await get_messages(client, [msg_id]))[0]
+                    msg = await client.get_messages(Var.BIN_CHANNEL, msg_id)
                     messages.append(msg)
                 except:
                     messages.append(None)
@@ -170,62 +166,31 @@ async def batch(client: Client, message: Message):
 
 # ------------------------- MESSAGE ID EXTRACTOR -------------------------
 async def extract_message_id(msg: Message) -> int:
-    """
-    Extract message_id from forwarded or link message.
-    Supports:
-    - Forwarded post
-    - https://t.me/c/<chat_id>/<msg_id>
-    - https://t.me/<username>/<msg_id>
-    """
     if msg.forward_from_chat and msg.forward_from_message_id:
         return msg.forward_from_message_id
 
     if msg.text:
-        # match /c/<chat_id>/<msg_id>
-        match = re.search(r"(?:t\.me/(?:c/)?[A-Za-z0-9_]+)/(\d+)", msg.text)
+        match = re.search(r"(?:t\.me/|/c/)[A-Za-z0-9_]+/(\d+)", msg.text)
         if match:
             return int(match.group(1))
 
     return None
 
 
-# ------------------------- PRIVATE HANDLERS -------------------------
-@StreamBot.on_message((filters.private) & (filters.document | filters.audio | filters.photo), group=3)
-async def private_doc_handler(c: Client, m: Message):
-    if CUSTOM_CAPTION and m.document:
+# ------------------------- PRIVATE MEDIA HANDLER -------------------------
+@StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=3)
+async def private_media_handler(c: Client, m: Message):
+    
+    media = m.document or m.video or m.audio or m.photo
+    
+    if CUSTOM_CAPTION:
         caption = CUSTOM_CAPTION.format(
             previouscaption="" if not m.caption else m.caption.html,
-            filename=m.document.file_name
+            filename=getattr(media, 'file_name', 'Unknown')
         )
     else:
-        caption = m.caption.html if m.caption else get_name(m.document)
-    caption = re.sub(r'@[\w_]+|https?://\S+|\s*#\w+', '', caption)
-    caption = re.sub(r'\s+', ' ', caption.strip())
+        caption = m.caption.html if m.caption else getattr(media, 'file_name', 'Unknown')
 
-    try:
-        log_msg = await m.copy(chat_id=Var.BIN_CHANNEL)
-        await asyncio.sleep(0.5)
-        stream_link = f"{Var.URL}generate/{log_msg.id}?hash={get_hash(log_msg)}"
-
-        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("STREAM ⏯️", url=stream_link)]])
-        await log_msg.edit_reply_markup(reply_markup)
-
-        F_text = f"<tr><td>&lt;a href='{stream_link}' target='_blank'&gt; {caption} &lt;/a&gt;</td></tr>"
-        await m.reply_text(text=F_text, disable_web_page_preview=True, quote=True)
-
-    except FloodWait as e:
-        await asyncio.sleep(e.x)
-
-
-@StreamBot.on_message((filters.private) & (filters.video | filters.audio | filters.photo), group=3)
-async def private_video_handler(c: Client, m: Message):
-    if CUSTOM_CAPTION and m.video:
-        caption = CUSTOM_CAPTION.format(
-            previouscaption="" if not m.caption else m.caption.html,
-            filename=m.video.file_name
-        )
-    else:
-        caption = m.caption.html if m.caption else get_name(m.video)
     caption = re.sub(r'@[\w_]+|https?://\S+|\s*#\w+', '', caption)
     caption = re.sub(r'\s+', ' ', caption.strip())
 
