@@ -33,6 +33,9 @@
             position: relative;
             width: 100%;
             margin: 0 auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
         }
         
         .loading-overlay {
@@ -61,6 +64,11 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .retry-button:hover {
+            background: #e64a19;
         }
         
         .quality-selector {
@@ -75,13 +83,21 @@
             display: none;
         }
         
+        .quality-selector select {
+            background: transparent;
+            border: 1px solid #555;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
         .buffer-indicator {
             position: absolute;
             bottom: 60px;
             left: 0;
             width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.3);
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
             z-index: 5;
             display: none;
         }
@@ -94,9 +110,13 @@
         }
         
         /* Plyr customizations */
+        .plyr {
+            border-radius: 8px;
+            font-family: 'Raleway', 'Delius', sans-serif;
+        }
+        
         .plyr--video {
             border-radius: 8px;
-            overflow: hidden;
         }
         
         .plyr__controls {
@@ -110,6 +130,37 @@
         .plyr--fullscreen-active .player-container {
             width: 100%;
             height: 100%;
+        }
+        
+        /* Custom progress bar styling */
+        .plyr__progress input[type="range"] {
+            z-index: 6;
+        }
+        
+        /* Network status indicator */
+        .network-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 5;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .network-status.good {
+            background: rgba(76, 175, 80, 0.7);
+        }
+        
+        .network-status.average {
+            background: rgba(255, 152, 0, 0.7);
+        }
+        
+        .network-status.poor {
+            background: rgba(244, 67, 54, 0.7);
         }
     </style>
     <meta name='dmca-site-verification' content='THBkdGsyeW85ZTBMT3VZNHpteGkvWEtoV3h5NENqcDdPa2hsUzZiU0ZZST01' />
@@ -134,6 +185,9 @@
                 <div id="retry-info" style="margin-top: 10px; font-size: 14px;">Retry: <span id="retry-count">0</span>/5</div>
                 <button class="retry-button" id="retry-button" style="display: none;">Retry Playback</button>
             </div>
+            
+            <!-- Network status indicator -->
+            <div class="network-status" id="network-status">Network: Good</div>
             
             <!-- Quality selector for HLS -->
             <div class="quality-selector" id="quality-selector">
@@ -169,6 +223,7 @@
         let isHLS = false;
         let hlsPlayer = null;
         let player = null;
+        let networkMonitorInterval = null;
         
         // DOM elements
         const videoPlayer = document.getElementById('video-player');
@@ -181,6 +236,7 @@
         const qualitySelect = document.getElementById('quality-select');
         const bufferIndicator = document.getElementById('buffer-indicator');
         const bufferProgress = document.getElementById('buffer-progress');
+        const networkStatus = document.getElementById('network-status');
         
         // Enhanced Plyr controls
         const controls = [
@@ -193,6 +249,7 @@
             'duration', 
             'mute', 
             'volume', 
+            'captions',
             'settings',
             'pip',
             'airplay',
@@ -220,23 +277,66 @@
         
         // Update buffer indicator
         function updateBufferIndicator() {
-            if (videoPlayer.buffered.length > 0) {
+            if (videoPlayer.buffered.length > 0 && videoPlayer.duration) {
                 const bufferedEnd = videoPlayer.buffered.end(videoPlayer.buffered.length - 1);
-                const duration = videoPlayer.duration;
                 const currentTime = videoPlayer.currentTime;
+                const bufferedTime = bufferedEnd - currentTime;
                 
-                if (duration > 0) {
-                    const bufferedPercent = ((bufferedEnd - currentTime) / duration) * 100;
-                    bufferProgress.style.width = Math.min(bufferedPercent, 100) + '%';
-                    
-                    // Show buffer indicator if buffering is active
-                    if (videoPlayer.readyState < 3 && !videoPlayer.paused) {
+                if (bufferedTime > 0) {
+                    // Show buffer indicator if we have less than 5 seconds buffered
+                    if (bufferedTime < 5 && !videoPlayer.paused) {
                         bufferIndicator.style.display = 'block';
+                        const percent = (bufferedTime / 5) * 100;
+                        bufferProgress.style.width = Math.min(percent, 100) + '%';
                     } else {
                         bufferIndicator.style.display = 'none';
                     }
+                } else {
+                    bufferIndicator.style.display = 'none';
                 }
+            } else {
+                bufferIndicator.style.display = 'none';
             }
+        }
+        
+        // Monitor network conditions
+        function startNetworkMonitoring() {
+            if (networkMonitorInterval) clearInterval(networkMonitorInterval);
+            
+            networkMonitorInterval = setInterval(() => {
+                if ('connection' in navigator) {
+                    const connection = navigator.connection;
+                    if (connection) {
+                        let statusText = 'Network: ';
+                        let statusClass = 'good';
+                        
+                        if (connection.downlink < 1) {
+                            statusText += 'Poor';
+                            statusClass = 'poor';
+                        } else if (connection.downlink < 2.5) {
+                            statusText += 'Average';
+                            statusClass = 'average';
+                        } else {
+                            statusText += 'Good';
+                            statusClass = 'good';
+                        }
+                        
+                        statusText += ` (${connection.downlink.toFixed(1)} Mbps)`;
+                        networkStatus.textContent = statusText;
+                        networkStatus.className = `network-status ${statusClass}`;
+                        networkStatus.style.display = 'block';
+                    }
+                }
+            }, 5000);
+        }
+        
+        // Stop network monitoring
+        function stopNetworkMonitoring() {
+            if (networkMonitorInterval) {
+                clearInterval(networkMonitorInterval);
+                networkMonitorInterval = null;
+            }
+            networkStatus.style.display = 'none';
         }
         
         // Initialize HLS.js if needed
@@ -317,7 +417,7 @@
                                     if (retryCount < MAX_RETRIES) {
                                         retryCount++;
                                         showLoading(`Network error. Retrying... (${retryCount}/${MAX_RETRIES})`);
-                                        hlsPlayer.startLoad();
+                                        setTimeout(() => hlsPlayer.startLoad(), RETRY_DELAY);
                                     } else {
                                         showError("Network error: Unable to load video after multiple attempts");
                                     }
@@ -404,6 +504,7 @@
         // Initialize the player
         function initPlayer() {
             showLoading();
+            startNetworkMonitoring();
             
             // Try to initialize HLS first
             if (!initHLS()) {
@@ -433,18 +534,17 @@
                             
                             if (selectedLevel !== -1) {
                                 hlsPlayer.currentLevel = selectedLevel;
-                                qualitySelect.value = selectedLevel;
+                                if (qualitySelect) qualitySelect.value = selectedLevel;
                             } else {
                                 hlsPlayer.currentLevel = -1; // Auto
-                                qualitySelect.value = 'auto';
+                                if (qualitySelect) qualitySelect.value = 'auto';
                             }
                         }
                     }
                 },
                 captions: { active: true, language: 'auto', update: true },
                 previewThumbnails: {
-                    enabled: true,
-                    src: ''
+                    enabled: false // Disabled as we don't have a thumbnail source
                 },
                 vimeo: { 
                     byline: false, 
@@ -459,6 +559,12 @@
                     showinfo: 0, 
                     iv_load_policy: 3, 
                     modestbranding: 1 
+                },
+                // Custom icon for better progress visibility
+                iconUrl: 'https://cdn.plyr.io/3.6.9/plyr.svg',
+                // Custom progress bar styling
+                selectors: {
+                    progress: '.plyr__progress'
                 }
             });
             
@@ -466,6 +572,12 @@
             player.on('ready', function() {
                 console.log('Plyr player ready');
                 hideLoading();
+                
+                // Ensure progress bar is visible
+                const progressBar = document.querySelector('.plyr__progress input[type="range"]');
+                if (progressBar) {
+                    progressBar.style.zIndex = '10';
+                }
                 
                 // Try to start playback
                 player.play().catch(function(error) {
@@ -507,6 +619,15 @@
                 } else {
                     showError("Playback failed after multiple attempts");
                 }
+            });
+            
+            // Ensure progress bar updates correctly
+            player.on('timeupdate', function() {
+                updateBufferIndicator();
+            });
+            
+            player.on('progress', function() {
+                updateBufferIndicator();
             });
         }
         
