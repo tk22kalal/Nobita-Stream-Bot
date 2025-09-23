@@ -11,11 +11,27 @@ from Adarsh.server.exceptions import FIleNotFound, InvalidHash
 from Adarsh import StartTime, __version__
 from ..utils.time_format import get_readable_time
 from ..utils.custom_dl import ByteStreamer
-from Adarsh.utils.render_template import render_page
+from Adarsh.utils.render_template import render_page, render_generate_page
 from Adarsh.vars import Var
 
 
 routes = web.RouteTableDef()
+
+@routes.get("/generate/{id}")
+async def generate_handler(request: web.Request):
+    try:
+        id = int(request.match_info['id'])
+        return web.Response(
+            text=await render_generate_page(id, request.rel_url.query.get("hash")),
+            content_type='text/html'
+        )
+    except InvalidHash as e:
+        raise web.HTTPForbidden(text=e.message)
+    except FIleNotFound as e:
+        raise web.HTTPNotFound(text=e.message)
+    except Exception as e:
+        logging.critical(e.with_traceback(None))
+        raise web.HTTPInternalServerError(text=str(e))
 
 @routes.get("/", allow_head=True)
 async def root_route_handler(_):
@@ -139,6 +155,9 @@ async def media_streamer(request: web.Request, id: int, secure_hash: str):
     mime_type = file_id.mime_type
     file_name = file_id.file_name
     disposition = "attachment"
+
+    if "dl" in request.path:
+        disposition = "attachment"
 
     if mime_type:
         if not file_name:
