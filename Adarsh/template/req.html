@@ -8,17 +8,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="monetag" content="f3ecc71ccb639ccf66d9d0dee93d3e7a">
     <title>{{ file_name }}</title>
+    <!-- Primary CSS (retain for look) -->
     <link rel="stylesheet" type='text/css' href="https://drive----google.com/uc?export=view&id=1pVLG4gZy7jdow3sO-wFS06aP_A9QX0O6">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Delius">
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.6.9/plyr.css" />
-
+    <!-- Video.js CSS (advanced HTML5 player) -->
+    <link href="https://unpkg.com/video.js/dist/video-js.min.css" rel="stylesheet">
     <style>
         marquee {
             font-size: 30px;
             font-weight: 800;
             color: Black;
             font-family: serif;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 1em;
+            text-align: center;
+        }
+        .video-js {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            font-family: 'Raleway', 'Delius', serif;
         }
     </style>
     <meta name='dmca-site-verification' content='THBkdGsyeW85ZTBMT3VZNHpteGkvWEtoV3h5NENqcDdPa2hsUzZiU0ZZST01' />
@@ -36,20 +49,56 @@
     </header>
 
     <div class="container">
-        <{{ tag }} src="{{ file_url }}" class="player"></{{ tag }}>
+        <!-- Advanced HTML5 Player: Video.js -->
+        <video
+            id="advanced-player"
+            class="video-js vjs-default-skin player"
+            controls
+            preload="auto"
+            poster="https://graph.org/file/5e6d18610741226005e6e.jpg"
+            data-setup='{"fluid": true}'
+        >
+            <source src="{{ file_url }}" type="video/mp4">
+            <!-- Fallback for other video types if needed -->
+            <!-- <source src="{{ file_url }}" type="video/webm"> -->
+            Your browser does not support the video tag.
+        </video>
     </div>
 
-    <script src="https://cdn.plyr.io/3.6.9/plyr.js"></script>
+    <!-- Video.js Library -->
+    <script src="https://unpkg.com/video.js/dist/video.min.js"></script>
     <script>
-        const controls = [
-            'play-large', 'rewind', 'play', 'fast-forward', 'progress',
-            'current-time', 'duration', 'mute', 'volume', 'captions',
-            'settings', 'pip', 'airplay', 'fullscreen'
-        ];
-        document.addEventListener('DOMContentLoaded', () => {
-            const player = Plyr.setup('.player', { controls });
+        // Initialize Video.js player
+        const player = videojs('advanced-player', {
+            controls: true,
+            preload: 'auto',
+            fluid: true,
+            playbackRates: [0.5, 1, 1.5, 2]
         });
 
+        // Custom double click events for forward/backward 10s
+        const videoElem = document.getElementById('advanced-player');
+
+        videoElem.addEventListener('dblclick', function(event) {
+            const rect = videoElem.getBoundingClientRect();
+            const x = event.clientX - rect.left; // x position within the video
+            if (x < rect.width / 2) {
+                // Left side: rewind 10 seconds
+                player.currentTime(Math.max(player.currentTime() - 10, 0));
+                // Optional: flash a message/animation
+            } else {
+                // Right side: forward 10 seconds
+                player.currentTime(Math.min(player.currentTime() + 10, player.duration()));
+                // Optional: flash a message/animation
+            }
+        });
+
+        // Optionally remove contextmenu to prevent accidental pop-up
+        videoElem.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // Retain old references if needed
         const body = document.querySelector('body');
         const footer = document.querySelector('footer');
         const toogle = document.querySelector('.toogle');
