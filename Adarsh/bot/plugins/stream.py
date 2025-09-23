@@ -59,11 +59,11 @@ async def process_message(msg, json_output, skipped_messages):
         file_hash = get_hash(log_msg)
         fqdn_url = Var.get_url_for_file(str(log_msg.id))
         stream_link = f"{fqdn_url}watch/{log_msg.id}/{quote_plus(file_name)}?hash={file_hash}"
-        generate_link_url = f"https://afrahtafreeh.site/api/generate-link?msg_id={log_msg.id}"
-
+        
+        # Add to successful output (same format as before)
         json_output.append({
             "title": caption,
-            "generateLinkUrl": generate_link_url
+            "streamingUrl": stream_link
         })
         
     except Exception as e:
