@@ -1,14 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generate Link</title>
+    <title>Stream Video</title>
+    <script>
+    async function generateLink(msg_id) {
+        document.getElementById('link-btn').disabled = true;
+        document.getElementById('link-btn').innerText = "Generating...";
+        const resp = await fetch(`/api/generate-link?msg_id=${msg_id}`);
+        const data = await resp.json();
+        if (data.streamingUrl) {
+            document.getElementById('video-link').innerHTML =
+                `<a href="${data.streamingUrl}" target="_blank">Watch Video</a>`;
+        } else {
+            document.getElementById('video-link').innerText = "Error generating link";
+        }
+    }
+    </script>
 </head>
 <body>
-    <h1>Generate Your Link</h1>
-    <p>Click the button below to generate your stream or download link.</p>
-    <a href="{{ stream_link }}"><button>Stream</button></a>
-    <a href="{{ download_link }}"><button>Download</button></a>
+    <h2>Video Title Here</h2>
+    <button id="link-btn" onclick="generateLink('12345')">Generate Link</button>
+    <div id="video-link"></div>
 </body>
 </html>
