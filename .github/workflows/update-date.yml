@@ -3,15 +3,17 @@ name: Update Date File
 on:
   schedule:
     - cron: "0 0 * * *"  # Runs every day at 12 AM UTC
-  workflow_dispatch:      # allows manual trigger
+  workflow_dispatch:
 
 jobs:
   update-date:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repo (token branch)
         uses: actions/checkout@v4
+        with:
+          ref: token   # checkout token branch
 
       - name: Set up Git
         run: |
@@ -21,10 +23,10 @@ jobs:
       - name: Update date in file
         run: |
           TODAY=$(date +'%Y-%m-%d')
-          echo "$TODAY" > date.txt   # change `date.txt` to your target file name
+          echo "Last updated: $TODAY" > date.txt   # overwrite date.txt
 
       - name: Commit and push changes
         run: |
           git add date.txt
           git commit -m "Update date to $(date +'%Y-%m-%d')" || echo "No changes to commit"
-          git push
+          git push origin token
